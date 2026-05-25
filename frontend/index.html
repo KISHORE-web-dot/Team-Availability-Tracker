@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>TeamPulse — Availability Tracker</title>
+  <meta name="description" content="Real-time team availability dashboard. Toggle availability status for each team member and track who's free." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@600;700;800&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+
+  <!-- ── HEADER ──────────────────────────────────────── -->
+  <header class="site-header">
+    <div class="header-inner">
+      <div class="brand">
+        <div class="brand-logo" aria-hidden="true">
+          <span class="logo-dot dot-green"></span>
+          <span class="logo-dot dot-yellow"></span>
+          <span class="logo-dot dot-red"></span>
+        </div>
+        <h1 class="brand-name">TeamPulse</h1>
+      </div>
+      <p class="brand-tagline">Live availability dashboard</p>
+    </div>
+
+    <!-- Live clock -->
+    <div class="header-right">
+      <div class="live-badge">
+        <span class="live-dot" aria-hidden="true"></span>
+        <span>LIVE</span>
+      </div>
+      <div class="clock" id="liveClock" aria-live="polite"></div>
+    </div>
+  </header>
+
+  <!-- ── STATS BAR ────────────────────────────────────── -->
+  <div class="stats-strip" role="region" aria-label="Team statistics">
+    <div class="stat-card" id="statTotal">
+      <div class="stat-value" id="numTotal">—</div>
+      <div class="stat-label">Total Members</div>
+    </div>
+    <div class="stat-card available-stat" id="statAvailable">
+      <div class="stat-value" id="numAvailable">—</div>
+      <div class="stat-label">Available</div>
+    </div>
+    <div class="stat-card busy-stat" id="statBusy">
+      <div class="stat-value" id="numBusy">—</div>
+      <div class="stat-label">Unavailable</div>
+    </div>
+    <div class="stat-card rate-stat">
+      <div class="stat-value" id="numRate">—</div>
+      <div class="stat-label">Availability Rate</div>
+      <!-- Progress bar -->
+      <div class="rate-bar" role="progressbar" aria-label="Availability rate">
+        <div class="rate-fill" id="rateBar"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── MAIN ─────────────────────────────────────────── -->
+  <main class="main-layout">
+
+    <!-- ── LEFT: Member Grid ── -->
+    <section class="members-section" aria-label="Team members">
+
+      <!-- Toolbar -->
+      <div class="section-toolbar">
+        <div class="filter-group" role="group" aria-label="Filter members">
+          <button class="filter-btn active" data-filter="all" id="filterAll">All</button>
+          <button class="filter-btn" data-filter="available" id="filterAvailable">🟢 Available</button>
+          <button class="filter-btn" data-filter="unavailable" id="filterUnavailable">🔴 Unavailable</button>
+        </div>
+
+        <div class="toolbar-right">
+          <!-- Search -->
+          <div class="search-wrap">
+            <svg class="search-icon" viewBox="0 0 20 20" fill="none" aria-hidden="true">
+              <circle cx="8.5" cy="8.5" r="5" stroke="currentColor" stroke-width="1.6"/>
+              <path d="m13 13 3.5 3.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
+            </svg>
+            <input type="search" id="searchInput" placeholder="Search members…" aria-label="Search team members" />
+          </div>
+          <button class="btn-add" id="btnAddMember" aria-label="Add new member">+ Add Member</button>
+        </div>
+      </div>
+
+      <!-- Grid -->
+      <div class="members-grid" id="membersGrid" aria-label="Team member cards">
+        <!-- Skeleton loaders -->
+        <div class="skeleton-card" aria-hidden="true"><div class="sk-avatar"></div><div class="sk-lines"><div class="sk-line w70"></div><div class="sk-line w50"></div></div><div class="sk-toggle"></div></div>
+        <div class="skeleton-card" aria-hidden="true"><div class="sk-avatar"></div><div class="sk-lines"><div class="sk-line w70"></div><div class="sk-line w50"></div></div><div class="sk-toggle"></div></div>
+        <div class="skeleton-card" aria-hidden="true"><div class="sk-avatar"></div><div class="sk-lines"><div class="sk-line w70"></div><div class="sk-line w50"></div></div><div class="sk-toggle"></div></div>
+        <div class="skeleton-card" aria-hidden="true"><div class="sk-avatar"></div><div class="sk-lines"><div class="sk-line w70"></div><div class="sk-line w50"></div></div><div class="sk-toggle"></div></div>
+      </div>
+
+      <!-- Empty state -->
+      <div class="no-results" id="noResults" hidden>
+        <div class="no-results-icon" aria-hidden="true">🔍</div>
+        <p>No members match your filter.</p>
+      </div>
+    </section>
+
+    <!-- ── RIGHT: Activity Log ── -->
+    <aside class="activity-panel" aria-label="Activity log">
+      <div class="panel-header">
+        <h2>Activity Log</h2>
+        <button class="btn-ghost-sm" id="btnClearLog" aria-label="Clear activity log">Clear</button>
+      </div>
+      <ul class="activity-list" id="activityList" aria-live="polite" aria-label="Recent status changes">
+        <li class="activity-empty" id="activityEmpty">No activity yet. Toggle a member's availability to see changes here.</li>
+      </ul>
+    </aside>
+
+  </main>
+
+  <!-- ── ADD MEMBER MODAL ─────────────────────────────── -->
+  <div id="addModal" class="modal-overlay" role="dialog" aria-modal="true" aria-labelledby="modalTitle" hidden>
+    <div class="modal-box">
+      <div class="modal-header">
+        <h2 id="modalTitle">Add Team Member</h2>
+        <button class="modal-close" id="modalClose" aria-label="Close modal">✕</button>
+      </div>
+      <form id="addMemberForm" novalidate>
+        <div class="modal-body">
+
+          <!-- Avatar colour picker -->
+          <div class="field">
+            <label>Avatar Colour</label>
+            <div class="color-picker-row" id="colorPicker" role="radiogroup" aria-label="Choose avatar color">
+              <button type="button" class="color-swatch active" data-color="#8b5cf6" style="background:#8b5cf6" aria-pressed="true" title="Violet"></button>
+              <button type="button" class="color-swatch" data-color="#ec4899" style="background:#ec4899" aria-pressed="false" title="Pink"></button>
+              <button type="button" class="color-swatch" data-color="#06b6d4" style="background:#06b6d4" aria-pressed="false" title="Cyan"></button>
+              <button type="button" class="color-swatch" data-color="#10b981" style="background:#10b981" aria-pressed="false" title="Emerald"></button>
+              <button type="button" class="color-swatch" data-color="#f59e0b" style="background:#f59e0b" aria-pressed="false" title="Amber"></button>
+              <button type="button" class="color-swatch" data-color="#ef4444" style="background:#ef4444" aria-pressed="false" title="Red"></button>
+              <button type="button" class="color-swatch" data-color="#6366f1" style="background:#6366f1" aria-pressed="false" title="Indigo"></button>
+              <button type="button" class="color-swatch" data-color="#84cc16" style="background:#84cc16" aria-pressed="false" title="Lime"></button>
+            </div>
+          </div>
+
+          <div class="modal-fields">
+            <div class="field">
+              <label for="fieldName">Full Name <span class="req">*</span></label>
+              <input type="text" id="fieldName" placeholder="e.g. Alex Rivera" required />
+              <span class="field-error" id="nameError"></span>
+            </div>
+            <div class="field">
+              <label for="fieldRole">Role</label>
+              <input type="text" id="fieldRole" placeholder="e.g. Frontend Developer" />
+            </div>
+            <div class="field">
+              <label for="fieldDept">Department</label>
+              <input type="text" id="fieldDept" placeholder="e.g. Engineering" />
+            </div>
+            <div class="field">
+              <label for="fieldTz">Timezone</label>
+              <input type="text" id="fieldTz" placeholder="e.g. UTC+5:30" />
+            </div>
+            <div class="field toggle-field">
+              <label for="fieldAvail">Available by default?</label>
+              <label class="toggle-switch" aria-label="Default availability">
+                <input type="checkbox" id="fieldAvail" checked />
+                <span class="toggle-track">
+                  <span class="toggle-thumb"></span>
+                </span>
+              </label>
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn-cancel" id="btnCancel">Cancel</button>
+          <button type="submit" class="btn-submit" id="btnSubmit">Add Member</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ── STATUS NOTE MODAL ────────────────────────────── -->
+  <div id="noteModal" class="modal-overlay" role="dialog" aria-modal="true" aria-labelledby="noteTitleEl" hidden>
+    <div class="modal-box modal-box--sm">
+      <div class="modal-header">
+        <h2 id="noteTitleEl">Set Status Note</h2>
+        <button class="modal-close" id="noteModalClose" aria-label="Close">✕</button>
+      </div>
+      <div class="modal-body">
+        <p class="note-hint">Optionally add a note explaining your status (e.g. "In a meeting", "On leave").</p>
+        <div class="quick-notes" id="quickNotes" role="listbox" aria-label="Quick status notes">
+          <button type="button" class="quick-note-btn" data-note="In a meeting">📅 In a meeting</button>
+          <button type="button" class="quick-note-btn" data-note="Focus time">🎯 Focus time</button>
+          <button type="button" class="quick-note-btn" data-note="On leave">🏖 On leave</button>
+          <button type="button" class="quick-note-btn" data-note="Lunch break">🍽 Lunch break</button>
+          <button type="button" class="quick-note-btn" data-note="Training">📚 Training</button>
+          <button type="button" class="quick-note-btn" data-note="">Clear note</button>
+        </div>
+        <input type="text" id="noteInput" placeholder="Or type a custom note…" maxlength="200" />
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn-cancel" id="noteCancel">Cancel</button>
+        <button type="button" class="btn-submit" id="noteSave">Save & Toggle</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast -->
+  <div id="toast" class="toast" role="status" aria-live="polite"></div>
+
+  <script src="app.js"></script>
+</body>
+</html>
